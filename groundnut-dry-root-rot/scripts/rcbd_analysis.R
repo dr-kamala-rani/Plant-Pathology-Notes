@@ -1,51 +1,42 @@
 groundnut-dry-root-rot/scripts/rcbd_analysis.R
-# ==============================================================================
-# Script: rcbd_analysis.R
-# Title: Statistical Evaluation of Groundnut Dry Root Rot Management Trials
-# Design: Randomized Complete Block Design (RCBD) | 15 Treatments x 3 Replications
-# ==============================================================================
+# Analysis of RCBD field trial: Dry root rot in groundnut
+# 15 treatments x 3 replications
 
-if (!require("agricolae")) install.packages("agricolae", dependencies = TRUE)
 library(agricolae)
 
-# 1. Load Experimental Dataset
-data_path <- "groundnut-dry-root-rot/data/groundnut_dry_root_rot_trial.csv"
-trial_data <- read.csv(data_path, stringsAsFactors = FALSE)
+# Load data
+df <- read.csv("groundnut-dry-root-rot/data/groundnut_dry_root_rot_trial.csv")
 
-trial_data$Replication <- as.factor(trial_data$Replication)
-trial_data$Treatment   <- as.factor(trial_data$Treatment)
+# Set factors
+df$Replication <- as.factor(df$Replication)
+df$Treatment   <- as.factor(df$Treatment)
 
-# Angular (Arcsine) transformation for percentage disease incidence data
-trial_data$DI_trans <- asin(sqrt(trial_data$Disease_Incidence_pct / 100)) * (180 / pi)
+# Arcsine transformation for incidence percentage
+df$DI_trans <- asin(sqrt(df$Disease_Incidence_pct / 100)) * (180 / pi)
 
-cat("\n==================================================================\n")
-cat(" 1. ANALYSIS OF VARIANCE: DRY ROOT ROT INCIDENCE (%)\n")
-cat("==================================================================\n")
 
-model_di <- aov(DI_trans ~ Replication + Treatment, data = trial_data)
-anova_di <- anova(model_di)
-print(anova_di)
+# --- 1. Disease Incidence (%) ---
 
-# Post-hoc mean separation (Tukey HSD)
-cat("\n--- Mean Separation: Disease Incidence (Tukey's HSD) ---\n")
-hsd_di <- HSD.test(model_di, "Treatment", group = TRUE, console = TRUE)
+fit_di <- aov(DI_trans ~ Replication + Treatment, data = df)
+summary(fit_di)
 
-cat("\n==================================================================\n")
-cat(" 2. ANALYSIS OF VARIANCE: POD YIELD (kg/ha)\n")
-cat("==================================================================\n")
+# Tukey HSD test (p = 0.05)
+hsd_di <- HSD.test(fit_di, "Treatment", group = TRUE, console = TRUE)
 
-model_yield <- aov(Pod_Yield_kg_ha ~ Replication + Treatment, data = trial_data)
-anova_yield <- anova(model_yield)
-print(anova_yield)
 
-# Post-hoc mean separation (Tukey HSD)
-cat("\n--- Mean Separation: Pod Yield (Tukey's HSD) ---\n")
-hsd_yield <- HSD.test(model_yield, "Treatment", group = TRUE, console = TRUE)
+# --- 2. Pod Yield (kg/ha) ---
 
-# Export Summary Table
-summary_table <- aggregate(cbind(Disease_Incidence_pct, Pod_Yield_kg_ha) ~ Treatment, 
-                           data = trial_data, 
-                           FUN = function(x) c(Mean = round(mean(x), 2), SE = round(sd(x)/sqrt(length(x)), 2)))
+fit_yield <- aov(Pod_Yield_kg_ha ~ Replication + Treatment, data = df)
+summary(fit_yield)
 
-write.csv(summary_table, "groundnut-dry-root-rot/treatment_means_summary.csv", row.names = FALSE)
-cat("\nSummary output saved to 'groundnut-dry-root-rot/treatment_means_summary.csv'.\n")
+# Tukey HSD test (p = 0.05)
+hsd_yield <- HSD.test(fit_yield, "Treatment", group = TRUE, console = TRUE)
+
+
+# --- 3. Summary Table ---
+
+means <- aggregate(cbind(Disease_Incidence_pct, Pod_Yield_kg_ha) ~ Treatment, 
+                   data = df, 
+                   FUN = function(x) c(Mean = round(mean(x), 2), SE = round(sd(x)/sqrt(length(x)), 2)))
+
+write.csv(means, "groundnut-dry-root-rot/treatment_summary.csv", row.names = FALSE)
