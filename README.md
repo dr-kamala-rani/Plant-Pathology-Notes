@@ -1,2 +1,3 @@
 # Plant-Pathology-Notes
-Scripts and notes on crop diagnostics
+## About This Project
+This repository tracks trial data analysis scripts, diagnostic protocols, and notes.
